@@ -9,7 +9,168 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      calendar_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          external_event_id: string | null
+          id: string
+          location: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          external_event_id?: string | null
+          id?: string
+          location?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          external_event_id?: string | null
+          id?: string
+          location?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      food_orders: {
+        Row: {
+          created_at: string
+          delivery_address: string
+          id: string
+          order_id: string | null
+          order_items: Json
+          order_total: number
+          provider: string
+          restaurant_name: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_address: string
+          id?: string
+          order_id?: string | null
+          order_items: Json
+          order_total: number
+          provider: string
+          restaurant_name: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_address?: string
+          id?: string
+          order_id?: string | null
+          order_items?: Json
+          order_total?: number
+          provider?: string
+          restaurant_name?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ride_bookings: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          dropoff_location: string
+          fare: number | null
+          id: string
+          pickup_location: string
+          pickup_time: string
+          provider: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          dropoff_location: string
+          fare?: number | null
+          id?: string
+          pickup_location: string
+          pickup_time: string
+          provider: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          dropoff_location?: string
+          fare?: number | null
+          id?: string
+          pickup_location?: string
+          pickup_time?: string
+          provider?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_integrations: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          provider: string
+          provider_user_id: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          provider: string
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -6,9 +6,20 @@ import { QuickActionsBar } from "@/components/QuickActionsBar";
 import { TaskList, Task } from "@/components/TaskList";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
 import { IntegrationHub } from "@/components/IntegrationHub";
+import { FoodDelivery } from "@/components/FoodDelivery";
+import { RideBooking } from "@/components/RideBooking";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const { user, isLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  if (!isLoading && !user) {
+    return <Navigate to="/auth" />;
+  }
+
   const todayTasks: Task[] = [
     {
       id: "1",
@@ -86,23 +97,33 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
             <TaskList 
               title="Today's Tasks" 
               tasks={todayTasks}
               onTaskComplete={handleTaskComplete} 
             />
           </div>
+          <div className="lg:col-span-1">
+            <FoodDelivery />
+          </div>
+          <div className="lg:col-span-1">
+            <RideBooking />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="h-full">
             <TaskList 
               title="Completed" 
               tasks={completedTasks} 
             />
           </div>
+          <div className="h-full">
+            <IntegrationHub />
+          </div>
         </div>
-        
-        <IntegrationHub />
       </div>
       
       <JarvisAssistant />

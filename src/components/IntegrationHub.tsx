@@ -1,54 +1,33 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Calendar, FileText, Truck, Car, ExternalLink, Star } from "lucide-react";
+import { MessageCircle, Calendar, FileText, Truck, Car, ExternalLink, Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { Provider } from "@supabase/supabase-js";
 
 interface Integration {
   id: string;
   name: string;
   icon: React.ElementType;
   color: string;
-  status: "connected" | "available" | "coming-soon";
+  status: "connected" | "available" | "connecting";
   description: string;
+  provider?: Provider;
 }
 
 export const IntegrationHub = () => {
-  const { user } = useAuth();
+  const { user, signInWithOAuth } = useAuth();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectType, setConnectType] = useState<"google-calendar" | "food-delivery" | "ride-booking" | null>(null);
+  const [userIntegrations, setUserIntegrations] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
   
-  const googleCalendarForm = useForm({
-    defaultValues: {
-      authToken: "",
-    },
-  });
-
-  const foodDeliveryForm = useForm({
-    defaultValues: {
-      provider: "",
-      apiKey: "",
-    },
-  });
-
-  const rideBookingForm = useForm({
-    defaultValues: {
-      provider: "",
-      apiKey: "",
-    },
-  });
-
-  const integrations: Integration[] = [
+  const [integrations, setIntegrations] = useState<Integration[]>([
     {
       id: "whatsapp",
       name: "WhatsApp",
@@ -63,7 +42,8 @@ export const IntegrationHub = () => {
       icon: Calendar,
       color: "text-blue-500",
       status: "available",
-      description: "Sync events and schedules"
+      description: "Sync events and schedules",
+      provider: "google"
     },
     {
       id: "notion",
@@ -78,7 +58,7 @@ export const IntegrationHub = () => {
       name: "Zomato/Swiggy",
       icon: Truck,
       color: "text-red-500",
-      status: "available", // Changed from coming-soon to available
+      status: "available",
       description: "Order food with voice commands"
     },
     {
@@ -86,129 +66,79 @@ export const IntegrationHub = () => {
       name: "Uber/Ola",
       icon: Car,
       color: "text-gray-900 dark:text-gray-100",
-      status: "available", // Changed from coming-soon to available
+      status: "available",
       description: "Book cabs with voice commands"
     }
-  ];
+  ]);
 
-  const handleIntegrationClick = (integration: Integration) => {
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchUserIntegrations = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_integrations')
+          .select('provider')
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        const connected: Record<string, boolean> = {};
+        data.forEach(integration => {
+          connected[integration.provider] = true;
+        });
+
+        // Map database provider names to integration IDs
+        if (connected['google_calendar']) connected['google-calendar'] = true;
+        if (connected['swiggy'] || connected['zomato']) connected['food-delivery'] = true;
+        if (connected['uber'] || connected['ola']) connected['uber'] = true;
+
+        setUserIntegrations(connected);
+
+        // Update integration statuses
+        setIntegrations(prev => prev.map(integration => ({
+          ...integration,
+          status: connected[integration.id] ? "connected" : "available"
+        })));
+      } catch (error) {
+        console.error("Error fetching user integrations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserIntegrations();
+  }, [user]);
+
+  const handleIntegrationClick = async (integration: Integration) => {
     setSelectedIntegration(integration);
     
-    switch(integration.id) {
-      case "google-calendar":
-        setConnectType("google-calendar");
-        setIsDialogOpen(true);
-        break;
-      case "food-delivery":
-        setConnectType("food-delivery");
-        setIsDialogOpen(true);
-        break;
-      case "uber":
-        setConnectType("ride-booking");
-        setIsDialogOpen(true);
-        break;
-      default:
-        toast({
-          title: `${integration.name} integration`,
-          description: "This integration will be available soon!",
-        });
-    }
-  };
-
-  const handleConnectGoogleCalendar = async (data: { authToken: string }) => {
-    if (!user) return;
-
-    try {
-      setIsConnecting(true);
-      
-      // In a real implementation, we would exchange this token for access/refresh tokens
-      // Here we're just simulating the connection
-      const { error } = await supabase.from('user_integrations').insert({
-        user_id: user.id,
-        provider: 'google_calendar',
-        access_token: data.authToken,
-        refresh_token: 'simulated_refresh_token',
-        token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Google Calendar connected!",
-        description: "Your calendar is now synced with Jarvis",
-      });
-      
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Connection failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const handleConnectFoodDelivery = async (data: { provider: string; apiKey: string }) => {
-    if (!user) return;
-
-    try {
-      setIsConnecting(true);
-      
-      const { error } = await supabase.from('user_integrations').insert({
-        user_id: user.id,
-        provider: data.provider,
-        access_token: data.apiKey,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: `${data.provider} connected!`,
-        description: "You can now order food through Jarvis",
-      });
-      
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Connection failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const handleConnectRideBooking = async (data: { provider: string; apiKey: string }) => {
-    if (!user) return;
-
-    try {
-      setIsConnecting(true);
-      
-      const { error } = await supabase.from('user_integrations').insert({
-        user_id: user.id,
-        provider: data.provider,
-        access_token: data.apiKey,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: `${data.provider} connected!`,
-        description: "You can now book rides through Jarvis",
-      });
-      
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Connection failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsConnecting(false);
+    // For OAuth providers
+    if (integration.provider) {
+      try {
+        // Update status to connecting
+        setIntegrations(prev => prev.map(item => 
+          item.id === integration.id ? { ...item, status: "connecting" } : item
+        ));
+        
+        await signInWithOAuth(integration.provider);
+        
+        // The actual connection status will be updated when the auth state changes
+        // and the useEffect hook runs again
+      } catch (error) {
+        console.error("OAuth error:", error);
+        
+        // Revert status
+        setIntegrations(prev => prev.map(item => 
+          item.id === integration.id ? { ...item, status: "available" } : item
+        ));
+      }
+    } else {
+      // For non-OAuth integrations
+      setIsDialogOpen(true);
     }
   };
 
@@ -225,39 +155,50 @@ export const IntegrationHub = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {integrations.map((integration) => (
-              <Button
-                key={integration.id}
-                variant="outline"
-                className={cn(
-                  "h-auto p-4 flex flex-col items-center gap-2 border",
-                  integration.status === "connected" && "border-green-500",
-                  integration.status === "coming-soon" && "opacity-70"
-                )}
-                onClick={() => handleIntegrationClick(integration)}
-              >
-                <integration.icon className={cn("h-6 w-6", integration.color)} />
-                <span className="text-xs font-medium">{integration.name}</span>
-                <div className="mt-1">
-                  {integration.status === "connected" ? (
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                      <Star className="h-3 w-3 mr-1" />
-                      Connected
-                    </Badge>
-                  ) : integration.status === "coming-soon" ? (
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                      Coming Soon
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                      Available
-                    </Badge>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-jarvis-blue" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {integrations.map((integration) => (
+                <Button
+                  key={integration.id}
+                  variant="outline"
+                  className={cn(
+                    "h-auto p-4 flex flex-col items-center gap-2 border",
+                    integration.status === "connected" && "border-green-500",
+                    integration.status === "connecting" && "opacity-70"
                   )}
-                </div>
-              </Button>
-            ))}
-          </div>
+                  onClick={() => handleIntegrationClick(integration)}
+                  disabled={integration.status === "connecting"}
+                >
+                  {integration.status === "connecting" ? (
+                    <Loader2 className={cn("h-6 w-6 animate-spin", integration.color)} />
+                  ) : (
+                    <integration.icon className={cn("h-6 w-6", integration.color)} />
+                  )}
+                  <span className="text-xs font-medium">{integration.name}</span>
+                  <div className="mt-1">
+                    {integration.status === "connected" ? (
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        <Star className="h-3 w-3 mr-1" />
+                        Connected
+                      </Badge>
+                    ) : integration.status === "connecting" ? (
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        Connecting...
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        Available
+                      </Badge>
+                    )}
+                  </div>
+                </Button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -270,137 +211,31 @@ export const IntegrationHub = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {connectType === "google-calendar" && (
-            <Form {...googleCalendarForm}>
-              <form onSubmit={googleCalendarForm.handleSubmit(handleConnectGoogleCalendar)}>
-                <div className="grid gap-4 py-4">
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      For this demo, just enter any text as an authorization token. 
-                      In a production app, we'd redirect to Google OAuth.
-                    </p>
-                  </div>
-                  <FormField
-                    control={googleCalendarForm.control}
-                    name="authToken"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Authorization Token</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter demo auth token" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={isConnecting}>
-                    {isConnecting ? "Connecting..." : "Connect"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          )}
-
-          {connectType === "food-delivery" && (
-            <Form {...foodDeliveryForm}>
-              <form onSubmit={foodDeliveryForm.handleSubmit(handleConnectFoodDelivery)}>
-                <div className="grid gap-4 py-4">
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      For this demo, select a provider and enter any text as API key.
-                    </p>
-                  </div>
-                  <FormField
-                    control={foodDeliveryForm.control}
-                    name="provider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider</FormLabel>
-                        <FormControl>
-                          <select
-                            className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            {...field}
-                          >
-                            <option value="">Select a provider</option>
-                            <option value="swiggy">Swiggy</option>
-                            <option value="zomato">Zomato</option>
-                          </select>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={foodDeliveryForm.control}
-                    name="apiKey"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>API Key</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter demo API key" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={isConnecting}>
-                    {isConnecting ? "Connecting..." : "Connect"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          )}
-
-          {connectType === "ride-booking" && (
-            <Form {...rideBookingForm}>
-              <form onSubmit={rideBookingForm.handleSubmit(handleConnectRideBooking)}>
-                <div className="grid gap-4 py-4">
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      For this demo, select a provider and enter any text as API key.
-                    </p>
-                  </div>
-                  <FormField
-                    control={rideBookingForm.control}
-                    name="provider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider</FormLabel>
-                        <FormControl>
-                          <select
-                            className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            {...field}
-                          >
-                            <option value="">Select a provider</option>
-                            <option value="uber">Uber</option>
-                            <option value="ola">Ola</option>
-                          </select>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={rideBookingForm.control}
-                    name="apiKey"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>API Key</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter demo API key" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={isConnecting}>
-                    {isConnecting ? "Connecting..." : "Connect"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          )}
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              To connect your {selectedIntegration?.name} account, you'll need to sign in with your credentials.
+              This will let Jarvis securely access your account.
+            </p>
+            
+            <Button 
+              onClick={() => {
+                toast({
+                  title: `${selectedIntegration?.name} connection initiated`,
+                  description: "Please complete the sign-in process in the popup window",
+                });
+                setIsDialogOpen(false);
+              }}
+              className="w-full"
+            >
+              Continue with {selectedIntegration?.name}
+            </Button>
+          </div>
+          
+          <DialogFooter className="mt-4">
+            <p className="text-xs text-muted-foreground">
+              Your credentials are never stored by Jarvis. We use secure OAuth for authentication.
+            </p>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

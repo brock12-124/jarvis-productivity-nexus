@@ -46,7 +46,7 @@ export const IntegrationService = {
   async signInWithOAuth(provider: string): Promise<boolean> {
     try {
       // For Google specifically, we'll use the provided client ID and additional calendar scopes
-      const options = {
+      const options: any = {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: getProviderScopes(provider),
       };

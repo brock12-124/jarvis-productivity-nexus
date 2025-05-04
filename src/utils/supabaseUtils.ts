@@ -2,10 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export function getSupabaseUrl() {
-  // Get the project URL from the client's API URL
-  const apiUrl = supabase.supabaseUrl;
-  // Return the base URL without the trailing slash
-  return apiUrl;
+  // Use the hardcoded URL from the client file
+  // This is more reliable than trying to access the protected supabaseUrl property
+  return "https://wbvixdyotrrcblwewbql.supabase.co";
 }
 
 export function getFunctionUrl(functionName: string) {

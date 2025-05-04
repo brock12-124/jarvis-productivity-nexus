@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Calendar, FileText, Truck, Car, ExternalLink, Star, Loader2 } from "lucide-react";
+import { MessageCircle, Calendar, FileText, Truck, Car, ExternalLink, Star, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -26,6 +26,7 @@ export const IntegrationHub = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userIntegrations, setUserIntegrations] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
@@ -130,6 +131,11 @@ export const IntegrationHub = () => {
         // and the useEffect hook runs again
       } catch (error) {
         console.error("OAuth error:", error);
+        toast({
+          title: "Connection failed",
+          description: "Failed to connect to " + integration.name,
+          variant: "destructive"
+        });
         
         // Revert status
         setIntegrations(prev => prev.map(item => 
@@ -139,6 +145,54 @@ export const IntegrationHub = () => {
     } else {
       // For non-OAuth integrations
       setIsDialogOpen(true);
+    }
+  };
+
+  const handleDisconnectIntegration = async (integrationId: string) => {
+    if (!user) return;
+    
+    const integration = integrations.find(item => item.id === integrationId);
+    if (!integration) return;
+    
+    try {
+      setDisconnectingId(integrationId);
+      
+      // Map integration ID to provider name in database
+      let providerName = integrationId;
+      if (integrationId === 'google-calendar') providerName = 'google_calendar';
+      
+      const { error } = await supabase
+        .from('user_integrations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('provider', providerName);
+      
+      if (error) throw error;
+      
+      // Update state
+      setUserIntegrations(prev => {
+        const updated = { ...prev };
+        delete updated[integrationId];
+        return updated;
+      });
+      
+      setIntegrations(prev => prev.map(item => 
+        item.id === integrationId ? { ...item, status: "available" } : item
+      ));
+      
+      toast({
+        title: "Disconnected",
+        description: `${integration.name} has been disconnected`,
+      });
+    } catch (error) {
+      console.error("Error disconnecting:", error);
+      toast({
+        title: "Failed to disconnect",
+        description: `Could not disconnect from ${integration.name}`,
+        variant: "destructive"
+      });
+    } finally {
+      setDisconnectingId(null);
     }
   };
 
@@ -162,40 +216,63 @@ export const IntegrationHub = () => {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {integrations.map((integration) => (
-                <Button
-                  key={integration.id}
-                  variant="outline"
-                  className={cn(
-                    "h-auto p-4 flex flex-col items-center gap-2 border",
-                    integration.status === "connected" && "border-green-500",
-                    integration.status === "connecting" && "opacity-70"
-                  )}
-                  onClick={() => handleIntegrationClick(integration)}
-                  disabled={integration.status === "connecting"}
-                >
-                  {integration.status === "connecting" ? (
-                    <Loader2 className={cn("h-6 w-6 animate-spin", integration.color)} />
-                  ) : (
-                    <integration.icon className={cn("h-6 w-6", integration.color)} />
-                  )}
-                  <span className="text-xs font-medium">{integration.name}</span>
-                  <div className="mt-1">
-                    {integration.status === "connected" ? (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                        <Star className="h-3 w-3 mr-1" />
-                        Connected
-                      </Badge>
-                    ) : integration.status === "connecting" ? (
-                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        Connecting...
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        Available
-                      </Badge>
+                <div key={integration.id} className="relative">
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-auto p-4 w-full flex flex-col items-center gap-2 border",
+                      integration.status === "connected" && "border-green-500",
+                      integration.status === "connecting" && "opacity-70"
                     )}
-                  </div>
-                </Button>
+                    onClick={() => {
+                      if (integration.status !== "connected") {
+                        handleIntegrationClick(integration);
+                      }
+                    }}
+                    disabled={integration.status === "connecting" || disconnectingId === integration.id}
+                  >
+                    {integration.status === "connecting" ? (
+                      <Loader2 className={cn("h-6 w-6 animate-spin", integration.color)} />
+                    ) : (
+                      <integration.icon className={cn("h-6 w-6", integration.color)} />
+                    )}
+                    <span className="text-xs font-medium">{integration.name}</span>
+                    <div className="mt-1">
+                      {integration.status === "connected" ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                          <Star className="h-3 w-3 mr-1" />
+                          Connected
+                        </Badge>
+                      ) : integration.status === "connecting" ? (
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          Connecting...
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          Available
+                        </Badge>
+                      )}
+                    </div>
+                  </Button>
+                  
+                  {integration.status === "connected" && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-1 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDisconnectIntegration(integration.id);
+                      }}
+                      disabled={disconnectingId === integration.id}
+                    >
+                      {disconnectingId === integration.id ? 
+                        <Loader2 className="h-3 w-3 animate-spin" /> : 
+                        <X className="h-3 w-3 text-gray-500 hover:text-red-600 dark:hover:text-red-400" />
+                      }
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
           )}

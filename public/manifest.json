@@ -1,11 +1,12 @@
 
 {
-  "name": "Jarvis Productivity Assistant",
+  "name": "Jarvis Assistant",
   "short_name": "Jarvis",
+  "description": "Your AI productivity assistant",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#1a56db",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -19,5 +20,22 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["productivity", "assistant", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Calendar",
+      "short_name": "Calendar",
+      "description": "View your calendar",
+      "url": "/calendar"
+    },
+    {
+      "name": "Tasks",
+      "short_name": "Tasks",
+      "description": "Manage your tasks",
+      "url": "/tasks"
+    }
+  ],
+  "related_applications": []
 }

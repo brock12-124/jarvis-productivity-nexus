@@ -4,6 +4,11 @@ import { Session, User, Provider } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
+// Google OAuth configuration
+const GOOGLE_CONFIG = {
+  clientId: '878897156097-4rb5r0i29sqfvi432nuissq10a9rad0l.apps.googleusercontent.com',
+};
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -119,18 +124,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // Determine the necessary scopes based on the provider
       let scopes = '';
+      let options: any = {
+        redirectTo: window.location.origin,
+      };
       
       if (provider === 'google') {
         // Request calendar-specific scopes for Google
         scopes = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
+        options.scopes = scopes;
+        options.queryParams = {
+          client_id: GOOGLE_CONFIG.clientId,
+          access_type: 'offline',
+          prompt: 'consent'
+        };
+      } else if (provider === 'slack') {
+        scopes = 'channels:read,channels:write,chat:write';
+        options.scopes = scopes;
+      } else if (provider === 'notion') {
+        scopes = 'read_user,read_content,create_content';
+        options.scopes = scopes;
       }
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: window.location.origin,
-          scopes: scopes,
-        }
+        options: options
       });
       
       if (error) {

@@ -6,6 +6,12 @@ import { corsHeaders, handleCORS, errorResponse, successResponse, getValidToken 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+// Google OAuth configuration
+const GOOGLE_CONFIG = {
+  clientId: '878897156097-4rb5r0i29sqfvi432nuissq10a9rad0l.apps.googleusercontent.com',
+  clientSecret: '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',
+};
+
 serve(async (req) => {
   // Handle CORS
   const corsResponse = await handleCORS(req);
@@ -37,7 +43,7 @@ serve(async (req) => {
     }
     
     // Get valid Google Calendar token
-    const tokenData = await getValidToken(supabaseClient, user.id, 'google_calendar');
+    const tokenData = await getValidToken(supabaseClient, user.id, 'google_calendar', GOOGLE_CONFIG);
     if (!tokenData) {
       return errorResponse('Google Calendar not connected', 400);
     }

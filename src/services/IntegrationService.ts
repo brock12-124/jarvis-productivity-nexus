@@ -8,6 +8,12 @@ export interface IntegrationStatus {
   lastSynced?: Date | null;
 }
 
+// Google OAuth configuration
+const GOOGLE_CONFIG = {
+  clientId: '878897156097-4rb5r0i29sqfvi432nuissq10a9rad0l.apps.googleusercontent.com',
+  clientSecret: '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',
+};
+
 export const IntegrationService = {
   /**
    * Get the status of all integrations for the current user
@@ -39,12 +45,24 @@ export const IntegrationService = {
    */
   async signInWithOAuth(provider: string): Promise<boolean> {
     try {
+      // For Google specifically, we'll use the provided client ID and additional calendar scopes
+      const options = {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: getProviderScopes(provider),
+      };
+
+      // If the provider is Google, add the client ID
+      if (provider.toLowerCase() === 'google') {
+        options.queryParams = {
+          client_id: GOOGLE_CONFIG.clientId,
+          access_type: 'offline',
+          prompt: 'consent',
+        };
+      }
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: getProviderScopes(provider),
-        }
+        options: options
       });
       
       if (error) {
@@ -113,7 +131,7 @@ export const IntegrationService = {
 function getProviderScopes(provider: string): string {
   switch (provider) {
     case 'google':
-      return 'https://www.googleapis.com/auth/calendar';
+      return 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
     case 'slack':
       return 'channels:read,channels:write,chat:write';
     case 'notion':

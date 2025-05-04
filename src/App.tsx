@@ -10,6 +10,7 @@ import Tasks from "./pages/Tasks";
 import Calendar from "./pages/Calendar";
 import Layout from "./components/Layout";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -24,6 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Layout />}>
                 <Route index element={<Dashboard />} />

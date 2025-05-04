@@ -3,3 +3,18 @@ project_id = "wbvixdyotrrcblwewbql"
 
 [functions.google-calendar]
 verify_jwt = true
+
+[functions.slack]
+verify_jwt = true
+
+[functions.notion]
+verify_jwt = true
+
+[functions.ride-service]
+verify_jwt = true
+
+[functions.food-delivery]
+verify_jwt = true
+
+[functions.sync-manager]
+verify_jwt = true

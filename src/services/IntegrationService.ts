@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface IntegrationStatus {
   provider: string;
@@ -86,7 +87,7 @@ export const IntegrationService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/sync-manager/sync-all`;
+      const endpoint = getFunctionUrl('sync-manager/sync-all');
       
       const response = await fetch(endpoint, {
         method: 'POST',

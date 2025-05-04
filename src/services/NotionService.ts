@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface NotionDatabase {
   id: string;
@@ -31,7 +31,7 @@ export const NotionService = {
         return localDatabases.map(db => ({
           id: db.database_id,
           title: db.title,
-          propertyMappings: db.property_mappings
+          propertyMappings: db.property_mappings as Record<string, any>
         }));
       }
       
@@ -41,7 +41,7 @@ export const NotionService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/notion/databases`;
+      const endpoint = getFunctionUrl('notion/databases');
       
       const response = await fetch(endpoint, {
         headers: {
@@ -64,7 +64,8 @@ export const NotionService = {
         
         return {
           id: db.id,
-          title
+          title,
+          propertyMappings: {}
         };
       });
     } catch (error) {
@@ -83,7 +84,7 @@ export const NotionService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/notion/create-page`;
+      const endpoint = getFunctionUrl('notion/create-page');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -116,7 +117,7 @@ export const NotionService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/notion/update-page`;
+      const endpoint = getFunctionUrl('notion/update-page');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -152,7 +153,7 @@ export const NotionService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/notion/search?query=${encodeURIComponent(query)}`;
+      const endpoint = `${getFunctionUrl('notion/search')}?query=${encodeURIComponent(query)}`;
       
       const response = await fetch(endpoint, {
         headers: {

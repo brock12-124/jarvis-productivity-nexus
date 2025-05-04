@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface RideEstimate {
   provider: string;
@@ -44,7 +44,7 @@ export const RideService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/ride-service/estimate`;
+      const endpoint = getFunctionUrl('ride-service/estimate');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -96,7 +96,7 @@ export const RideService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/ride-service/book`;
+      const endpoint = getFunctionUrl('ride-service/book');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -145,7 +145,7 @@ export const RideService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/ride-service/status?booking_id=${encodeURIComponent(bookingId)}`;
+      const endpoint = `${getFunctionUrl('ride-service/status')}?booking_id=${encodeURIComponent(bookingId)}`;
       
       const response = await fetch(endpoint, {
         headers: {
@@ -193,7 +193,7 @@ export const RideService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/ride-service/cancel`;
+      const endpoint = getFunctionUrl('ride-service/cancel');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -228,7 +228,7 @@ export const RideService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/ride-service/history`;
+      const endpoint = getFunctionUrl('ride-service/history');
       
       const response = await fetch(endpoint, {
         headers: {

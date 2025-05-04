@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface SlackChannel {
   id: string;
@@ -46,7 +46,7 @@ export const SlackService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/slack/channels`;
+      const endpoint = getFunctionUrl('slack/channels');
       
       const response = await fetch(endpoint, {
         headers: {
@@ -88,7 +88,7 @@ export const SlackService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/slack/send-message`;
+      const endpoint = getFunctionUrl('slack/send-message');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -121,7 +121,7 @@ export const SlackService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/slack/create-reminder`;
+      const endpoint = getFunctionUrl('slack/create-reminder');
       
       const response = await fetch(endpoint, {
         method: 'POST',

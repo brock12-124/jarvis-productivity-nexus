@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface CalendarEvent {
   id: string;
@@ -50,7 +50,7 @@ export const CalendarService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/google-calendar/calendars`;
+      const endpoint = getFunctionUrl('google-calendar/calendars');
       
       const response = await fetch(endpoint, {
         headers: {
@@ -123,7 +123,7 @@ export const CalendarService = {
         params.append('calendarId', calendarId);
       }
       
-      const endpoint = `${supabase.functions.url}/google-calendar/events?${params.toString()}`;
+      const endpoint = `${getFunctionUrl('google-calendar/events')}?${params.toString()}`;
       
       const response = await fetch(endpoint, {
         headers: {
@@ -176,7 +176,7 @@ export const CalendarService = {
         }
       };
       
-      const endpoint = `${supabase.functions.url}/google-calendar/create-event`;
+      const endpoint = getFunctionUrl('google-calendar/create-event');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -240,7 +240,7 @@ export const CalendarService = {
         }
       };
       
-      const endpoint = `${supabase.functions.url}/google-calendar/update-event`;
+      const endpoint = getFunctionUrl('google-calendar/update-event');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -289,7 +289,7 @@ export const CalendarService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/google-calendar/delete-event`;
+      const endpoint = getFunctionUrl('google-calendar/delete-event');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -325,7 +325,7 @@ export const CalendarService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/google-calendar/sync`;
+      const endpoint = getFunctionUrl('google-calendar/sync');
       
       const response = await fetch(endpoint, {
         headers: {

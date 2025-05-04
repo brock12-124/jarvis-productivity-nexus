@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionUrl } from "@/utils/supabaseUtils";
 
 export interface Restaurant {
   id: string;
@@ -62,7 +62,7 @@ export const FoodDeliveryService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/food-delivery/search-restaurants?provider=${encodeURIComponent(provider)}&query=${encodeURIComponent(query)}&latitude=${latitude}&longitude=${longitude}`;
+      const endpoint = `${getFunctionUrl('food-delivery/search-restaurants')}?provider=${encodeURIComponent(provider)}&query=${encodeURIComponent(query)}&latitude=${latitude}&longitude=${longitude}`;
       
       const response = await fetch(endpoint, {
         headers: {
@@ -105,7 +105,7 @@ export const FoodDeliveryService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/food-delivery/get-menu?provider=${encodeURIComponent(provider)}&restaurant_id=${encodeURIComponent(restaurantId)}`;
+      const endpoint = `${getFunctionUrl('food-delivery/get-menu')}?provider=${encodeURIComponent(provider)}&restaurant_id=${encodeURIComponent(restaurantId)}`;
       
       const response = await fetch(endpoint, {
         headers: {
@@ -162,7 +162,7 @@ export const FoodDeliveryService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/food-delivery/place-order`;
+      const endpoint = getFunctionUrl('food-delivery/place-order');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -212,7 +212,7 @@ export const FoodDeliveryService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/food-delivery/order-status?provider=${encodeURIComponent(provider)}&order_id=${encodeURIComponent(orderId)}`;
+      const endpoint = `${getFunctionUrl('food-delivery/order-status')}?provider=${encodeURIComponent(provider)}&order_id=${encodeURIComponent(orderId)}`;
       
       const response = await fetch(endpoint, {
         headers: {
@@ -259,7 +259,7 @@ export const FoodDeliveryService = {
         throw new Error('No active session');
       }
       
-      const endpoint = `${supabase.functions.url}/food-delivery/order-history`;
+      const endpoint = getFunctionUrl('food-delivery/order-history');
       
       const response = await fetch(endpoint, {
         headers: {

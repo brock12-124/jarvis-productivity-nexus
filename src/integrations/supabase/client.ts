@@ -15,6 +15,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    debug: true // Added debug to see authentication issues
   }
 });
+
+// Add a listener to catch any Supabase fetch errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', function(event) {
+    if (event.reason && event.reason.toString().includes('Failed to fetch')) {
+      console.error('Supabase API connection error:', event.reason);
+    }
+  });
+}

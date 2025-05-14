@@ -11,7 +11,8 @@ import { toast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Lock, Mail, User } from "lucide-react";
+import { Loader2, Lock, Mail, User, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -28,6 +29,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,6 +51,8 @@ const Auth = () => {
   const handleLogin = async (values: LoginFormValues) => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
+      
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -63,9 +67,22 @@ const Auth = () => {
 
       navigate("/");
     } catch (error: any) {
+      console.error("Login error:", error);
+      
+      let errorMsg: string;
+      if (error.message) {
+        errorMsg = error.message;
+      } else if (error.toString().includes("fetch")) {
+        errorMsg = "Network error. Please check your internet connection and try again.";
+      } else {
+        errorMsg = "An error occurred during login. Please try again.";
+      }
+      
+      setErrorMessage(errorMsg);
+      
       toast({
         title: "Login failed",
-        description: error.message || "An error occurred during login",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -76,6 +93,8 @@ const Auth = () => {
   const handleSignup = async (values: SignupFormValues) => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
+      
       const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -93,9 +112,22 @@ const Auth = () => {
         description: "Please check your email to verify your account",
       });
     } catch (error: any) {
+      console.error("Signup error:", error);
+      
+      let errorMsg: string;
+      if (error.message) {
+        errorMsg = error.message;
+      } else if (error.toString().includes("fetch")) {
+        errorMsg = "Network error. Please check your internet connection and try again.";
+      } else {
+        errorMsg = "An error occurred during registration. Please try again.";
+      }
+      
+      setErrorMessage(errorMsg);
+      
       toast({
         title: "Registration failed",
-        description: error.message || "An error occurred during registration",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -113,6 +145,13 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
